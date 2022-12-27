@@ -37,7 +37,7 @@ public class FileUtil {
      **********************************************************************************************/
     public String getUploadFolderWithDate(String type, String temp){
         Date date = new Date();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
         String formatted = sdf.format(date);
         String[] splited = formatted.split("-");
         String yyyy = splited[0];

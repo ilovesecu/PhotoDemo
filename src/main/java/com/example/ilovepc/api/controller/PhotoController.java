@@ -40,7 +40,7 @@ public class PhotoController {
             }
         }
 
-        //photoUploadService
+        photoUploadService.setUploadImageMmbr(type, photoUploadVO);
 
         return null;
     }

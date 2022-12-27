@@ -59,7 +59,6 @@ public class PhotoUploadService {
             return photoResult;
         }
         //TODO : 회원인경우 , DB에서 회원번호 있는지 검사
-
         Map<String, Map<String,Object>> detailMap = new HashMap<>();
         ImageInputStream imageInputStream = null;
         InputStream inputStream = null;
@@ -69,6 +68,16 @@ public class PhotoUploadService {
             String absolutPath = fileUtil.getAbsolutePath(serverType);
             String uploadPath = fileUtil.getUploadFolderWithDate(type, photoUploadVO.getTemp());
             log.error("ab={}, up={}",absolutPath,uploadPath);
+
+            File uploadFolder = new File(absolutPath+File.separator+uploadPath);
+            if(uploadFolder.exists() == false){ // 업로드할 폴더 생성
+                uploadFolder.mkdirs();
+            }
+            
+            for(int i=0; i<files.length; i++){
+                //PhotoDetail infoResult = new PhotoDetail();
+            }
+            
         }catch(Exception e){
 
         }
