@@ -1,7 +1,9 @@
 package com.example.ilovepc.api.service;
 
+import com.example.ilovepc.api.vo.PhotoDetail;
 import com.example.ilovepc.api.vo.PhotoResult;
 import com.example.ilovepc.api.vo.PhotoUploadVO;
+import com.example.ilovepc.common.utils.CustomRandomUtils;
 import com.example.ilovepc.common.utils.FileUtil;
 import com.example.ilovepc.common.utils.MemberUtil;
 import lombok.AllArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.stream.ImageInputStream;
+import java.awt.*;
 import java.io.File;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -66,20 +69,47 @@ public class PhotoUploadService {
         try{
             photoResult.setUploadTotCnt(files.length);
             String absolutPath = fileUtil.getAbsolutePath(serverType);
-            String uploadPath = fileUtil.getUploadFolderWithDate(type, photoUploadVO.getTemp());
-            log.error("ab={}, up={}",absolutPath,uploadPath);
+            String datePath = fileUtil.getUploadFolderWithDate(type, photoUploadVO.getTemp());
+            log.error("ab={}, up={}",absolutPath,datePath);
 
-            File uploadFolder = new File(absolutPath+File.separator+uploadPath);
+            File uploadFolder = new File(absolutPath+File.separator+datePath);
             if(uploadFolder.exists() == false){ // 업로드할 폴더 생성
                 uploadFolder.mkdirs();
             }
             
             for(int i=0; i<files.length; i++){
-                //PhotoDetail infoResult = new PhotoDetail();
+                MultipartFile mUploadReqFile = files[i];
+                PhotoDetail infoResult = new PhotoDetail();
+                String fileName = mUploadReqFile.getOriginalFilename();
+
+                //요청한 확장자
+                String extFileNameParam = photoUploadVO.getFileExt();
+                if(extFileNameParam != null || extFileNameParam.equals("") == false){
+                    fileName += "." + extFileNameParam;
+                }
+                /* ==> 해당 코드는 파일명에서 확장자를 가져와서 검사하는것이므로 취약함.
+                String[] splitFileName = fileName.split("\\."); //확장자 추출을 위한 '.'split
+                String extFileName = "jpg"; //기본확장자는 jpg
+                if (splitFileName.length > 1)
+                    extFileName = splitFileName[splitFileName.length - 1].trim().toLowerCase();
+                 */
+                //파일 확장자 검사
+                File uploadReqFile = new File(uploadFolder+File.separator+mUploadReqFile.getOriginalFilename());
+                boolean isPermissionType = fileUtil.isPermissionFileType(uploadReqFile);
+                if(isPermissionType == false){
+                    //파일 확장자가 문제일경우.
+                    infoResult.setCode(100098);
+                    infoResult.setMsg("지원하지 않은 파일입니다. : " + fileName);
+                    photoResult.addErrorCnt();
+                }else{
+                    String resultDecimal = CustomRandomUtils.getMillisTime();
+                    Image image = null;
+
+                }
             }
             
         }catch(Exception e){
-
+            e.printStackTrace();
         }
 
         return photoResult;

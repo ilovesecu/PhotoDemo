@@ -16,8 +16,7 @@ public class MemberUtil {
         if(checkMem){
             return vo.getMemNo();
         }else{
-            //(int) Math.random() * (최댓값-최소값+1) + 최소값 이용~
-            return (int) (Math.random() * (99999 - 10000 + 1)  + 10000);
+            return CustomRandomUtils.rand5Integer();
         }
     }
     

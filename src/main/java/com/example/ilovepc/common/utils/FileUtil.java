@@ -1,6 +1,8 @@
 package com.example.ilovepc.common.utils;
 
+import com.example.ilovepc.common.Const;
 import com.example.ilovepc.common.FileType;
+import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -56,5 +58,28 @@ public class FileUtil {
                 + File.separator + dd
                 ;
         return folderPath;
+    }
+    
+    
+    /********************************************************************************************** 
+     * @Method 설명 : 파일 확장자 검사 (true : 허용 / false : 비허용)
+     * @작성일 : 2022-12-28 
+     * @작성자 : 정승주
+     * @변경이력 : 
+     **********************************************************************************************/
+    public boolean isPermissionFileType(File file){
+        boolean result = false;
+        if(!file.isFile()){
+            return false;
+        }
+        try{
+            String mimeType = new Tika().detect(file);
+            if(Const.FILE_CONTAINS.contains(mimeType)){
+                result = true;
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return result;
     }
 }
