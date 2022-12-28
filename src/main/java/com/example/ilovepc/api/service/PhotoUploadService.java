@@ -94,8 +94,7 @@ public class PhotoUploadService {
                     extFileName = splitFileName[splitFileName.length - 1].trim().toLowerCase();
                  */
                 //파일 확장자 검사
-                File uploadReqFile = new File(uploadFolder+File.separator+mUploadReqFile.getOriginalFilename());
-                boolean isPermissionType = fileUtil.isPermissionFileType(uploadReqFile);
+                boolean isPermissionType = fileUtil.isPermissionFileType(mUploadReqFile.getInputStream());
                 if(isPermissionType == false){
                     //파일 확장자가 문제일경우.
                     infoResult.setCode(100098);

@@ -7,8 +7,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 @Component
 public class FileUtil {
@@ -67,14 +69,15 @@ public class FileUtil {
      * @작성자 : 정승주
      * @변경이력 : 
      **********************************************************************************************/
-    public boolean isPermissionFileType(File file){
+    public boolean isPermissionFileType(InputStream inputStream){
         boolean result = false;
-        if(!file.isFile()){
-            return false;
-        }
         try{
-            String mimeType = new Tika().detect(file);
-            if(Const.FILE_CONTAINS.contains(mimeType)){
+            String mimeType = new Tika().detect(inputStream);
+            String[] mimeTypeSplited = mimeType.split("/");
+            if(mimeTypeSplited[0].equals("image") == false){
+                return false;
+            }
+            if(Const.IMAGE_FILE_CONTAINS.contains(mimeTypeSplited[1].toLowerCase(Locale.ROOT))){
                 result = true;
             }
         }catch(Exception e){
