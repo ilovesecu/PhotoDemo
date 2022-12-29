@@ -1,5 +1,6 @@
 package com.example.ilovepc.api.service;
 
+import com.example.ilovepc.api.vo.ExtensionResult;
 import com.example.ilovepc.api.vo.PhotoDetail;
 import com.example.ilovepc.api.vo.PhotoResult;
 import com.example.ilovepc.api.vo.PhotoUploadVO;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.io.File;
@@ -63,13 +65,14 @@ public class PhotoUploadService {
         }
         //TODO : 회원인경우 , DB에서 회원번호 있는지 검사
         Map<String, Map<String,Object>> detailMap = new HashMap<>();
+        Map<String,Object> dateMap = fileUtil.getDateMap();
         ImageInputStream imageInputStream = null;
         InputStream inputStream = null;
 
         try{
             photoResult.setUploadTotCnt(files.length);
             String absolutPath = fileUtil.getAbsolutePath(serverType);
-            String datePath = fileUtil.getUploadFolderWithDate(type, photoUploadVO.getTemp());
+            String datePath = fileUtil.getUploadFolderWithDate(type, photoUploadVO.getTemp(), dateMap);
             log.error("ab={}, up={}",absolutPath,datePath);
 
             File uploadFolder = new File(absolutPath+File.separator+datePath);
@@ -94,15 +97,41 @@ public class PhotoUploadService {
                     extFileName = splitFileName[splitFileName.length - 1].trim().toLowerCase();
                  */
                 //파일 확장자 검사
-                boolean isPermissionType = fileUtil.isPermissionFileType(mUploadReqFile.getInputStream());
-                if(isPermissionType == false){
+                ExtensionResult extensionResult = fileUtil.isPermissionFileType(mUploadReqFile.getInputStream());
+                if(extensionResult.isResult() == false){
                     //파일 확장자가 문제일경우.
                     infoResult.setCode(100098);
                     infoResult.setMsg("지원하지 않은 파일입니다. : " + fileName);
                     photoResult.addErrorCnt();
                 }else{
-                    String resultDecimal = CustomRandomUtils.getMillisTime();
+                    //업로드 실행
+                    String resultDecimal = CustomRandomUtils.getMillisTime(); //현재 밀리초를 기반으로 랜덤 5숫자
                     Image image = null;
+                    inputStream = mUploadReqFile.getInputStream();
+                    imageInputStream = ImageIO.createImageInputStream(inputStream);
+                    try{
+                        image = ImageIO.read(imageInputStream); //킹보는 gif랑 따로 처리하는데 PatchedGIFImageReader 객체를 못찾겠어서 같이 처리하자.
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+
+                    if(image == null){ //imageStream으로 못 읽었을 때
+                        infoResult.setCode(100096);
+                        infoResult.setMsg("이미지 파일이 아닙니다. [image==null]");
+                        photoResult.addErrorCnt();
+                    }else{
+                        //서버 저장 file name = jpg 고정
+                        // ▼ 해당 이름은 서버저장이름
+                        String originalFileName = fileUtil.getNewFileName(memNo, dateMap, extensionResult.getExtType(), resultDecimal, "");
+                        String originalFileName_o = fileUtil.getNewFileName(memNo, dateMap, extensionResult.getExtType(), resultDecimal, "o");
+
+                        // GIF 원본 저장
+                        if(extensionResult.getExtType().equals("gif")){
+                            mUploadReqFile.transferTo(new File(uploadFolder+File.separator+originalFileName));
+                        }
+
+
+                    }
 
                 }
             }
