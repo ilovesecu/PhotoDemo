@@ -4,11 +4,15 @@ import com.example.ilovepc.api.vo.ExtensionResult;
 import com.example.ilovepc.api.vo.PhotoDetail;
 import com.example.ilovepc.api.vo.PhotoResult;
 import com.example.ilovepc.api.vo.PhotoUploadVO;
+import com.example.ilovepc.common.Const;
+import com.example.ilovepc.common.FileType;
 import com.example.ilovepc.common.utils.CustomRandomUtils;
 import com.example.ilovepc.common.utils.FileUtil;
 import com.example.ilovepc.common.utils.MemberUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.coobird.thumbnailator.Thumbnailator;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -17,10 +21,12 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -109,11 +115,8 @@ public class PhotoUploadService {
                     Image image = null;
                     inputStream = mUploadReqFile.getInputStream();
                     imageInputStream = ImageIO.createImageInputStream(inputStream);
-                    try{
-                        image = ImageIO.read(imageInputStream); //킹보는 gif랑 따로 처리하는데 PatchedGIFImageReader 객체를 못찾겠어서 같이 처리하자.
-                    }catch (Exception e){
-                        e.printStackTrace();
-                    }
+                    Optional<Image> imageOpt = Optional.ofNullable(ImageIO.read(imageInputStream));
+                    image = imageOpt.orElse(null); //킹보는 gif랑 따로 처리하는데 PatchedGIFImageReader 객체를 못찾겠어서 같이 처리하자.
 
                     if(image == null){ //imageStream으로 못 읽었을 때
                         infoResult.setCode(100096);
@@ -127,10 +130,15 @@ public class PhotoUploadService {
 
                         // GIF 원본 저장
                         if(extensionResult.getExtType().equals("gif")){
-                            mUploadReqFile.transferTo(new File(uploadFolder+File.separator+originalFileName));
+                            mUploadReqFile.transferTo(new File(uploadFolder+File.separator+originalFileName_o));
                         }
-
-
+                        Map<String,Integer> saveSizeMap = Const.getSaveImageSizeInfo(FileType.getServiceType(type));
+                        boolean uploadStatus = true;
+                        if(extensionResult.getExtType().equals("gif") == false){
+                            //GIF가 아닐 때 → 비율 처리 후 업로드 동시 진행
+                            uploadStatus = this.imageSizeAndUpload(uploadFolder.getAbsolutePath(), originalFileName, extensionResult.getExtType(), image, 0, 0, originalFileName_o);
+                            
+                        }
                     }
 
                 }
@@ -141,5 +149,66 @@ public class PhotoUploadService {
         }
 
         return photoResult;
+    }
+    
+    /********************************************************************************************** 
+     * @Method 설명 : 이미지 비율 처리 및 이미지 업로드 동시 진행
+     * @작성일 : 2022-12-29 
+     * @작성자 : 정승주
+     * @변경이력 : 
+     **********************************************************************************************/
+    private boolean imageSizeAndUpload(String imgTargetPath, String fileName, String extFileName, Image image, int dstW, int dstH, String orgFilePath){
+        Double scale;
+        // 원본 이미지 사이즈 가져오기
+        Integer imageWidth = image.getWidth(null);
+        Integer imageHeight = image.getHeight(null);
+
+        int resizeW;
+        int resizeH;
+        if (dstW == 0 || dstH == 0) { //목표 W,H 가 0이라면 원본 사이즈 그대로
+            resizeW = imageWidth;
+            resizeH = imageHeight;
+        }else{
+            scale = getScale(imageWidth, imageHeight, dstW, dstH); // 목표 사이즈로 줄이기 위한 배율 값 가져오기 (같은 배율로 줄여야함)
+            resizeW = ((Double) (imageWidth.doubleValue() * scale)).intValue();
+            resizeH = ((Double) (imageHeight.doubleValue() * scale)).intValue();
+        }
+
+        if(extFileName.equals("gif")){ //GIF 비율 따로 처리
+
+        }else{
+            try{
+                BufferedImage originBuffer = ((BufferedImage) image);
+                BufferedImage bufferedImage = Thumbnails.of(originBuffer)
+                        .size(resizeW, resizeH)
+                        .outputFormat(extFileName)
+                        .asBufferedImage();
+                ImageIO.write(bufferedImage, extFileName, new File(imgTargetPath+fileName));
+            }catch(Exception e){
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+
+        return true;
+    }
+
+    /**********************************************************************************************
+     * @Method 설명 : 상대적 비율 계산 (같은 비율로 w,h를 줄여야 하니까)
+     * @작성일 : 2022-12-29
+     * @작성자 : 정승주
+     * @변경이력 :
+     **********************************************************************************************/
+    public Double getScale(int srcW, int srcH, int dstW, int dstH) {
+        Double scale = new Double(1); //기본적으로 1배율
+        if(srcW > dstW || srcH > dstH){ //목표값 중 하나라도 작을 때
+            if(srcW > srcH){ //원본 width가 원본 height보다 클 때
+                scale = dstW * 0.1 / srcW;
+            }else{ //원본 height가 더 클때
+                scale = dstH * 0.1 / srcH;
+            }
+        }
+        return scale;
     }
 }
