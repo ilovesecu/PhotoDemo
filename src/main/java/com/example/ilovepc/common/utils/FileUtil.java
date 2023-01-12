@@ -130,8 +130,7 @@ public class FileUtil {
 
             if(mimeTypeSplited[0].equals("image") == false){
                 result.setResult(false);
-            }
-            if(Const.IMAGE_FILE_CONTAINS.contains(mimeTypeSplited[1].toLowerCase(Locale.ROOT))){
+            } else if(Const.IMAGE_FILE_CONTAINS.contains(mimeTypeSplited[1].toLowerCase(Locale.ROOT))){
                 result.setResult(true);
             }
         }catch(Exception e){

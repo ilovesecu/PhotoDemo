@@ -4,6 +4,7 @@ import java.util.Map;
 
 public class Const {
     public static final String IMAGE_FILE_CONTAINS = "gif|jpg|jpeg|png";
+    public static final String CHAT_TYPE = "msg|nbMsg|tradeChat";
     private static final Map<String,Integer> kingBoSizeMap = new HashMap<>();
 
     static {

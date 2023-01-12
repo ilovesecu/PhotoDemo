@@ -6,6 +6,8 @@ import com.example.ilovepc.api.vo.PhotoResult;
 import com.example.ilovepc.api.vo.PhotoUploadVO;
 import com.example.ilovepc.common.Const;
 import com.example.ilovepc.common.FileType;
+import com.example.ilovepc.common.external.AnimatedGifEncoder;
+import com.example.ilovepc.common.external.GifDecoder;
 import com.example.ilovepc.common.utils.CustomRandomUtils;
 import com.example.ilovepc.common.utils.FileUtil;
 import com.example.ilovepc.common.utils.MemberUtil;
@@ -89,7 +91,7 @@ public class PhotoUploadService {
             for(int i=0; i<files.length; i++){
                 MultipartFile mUploadReqFile = files[i];
                 PhotoDetail infoResult = new PhotoDetail();
-                String fileName = mUploadReqFile.getOriginalFilename();
+                String fileName = mUploadReqFile.getOriginalFilename(); //사용자가 업로드한 원본이름
 
                 //요청한 확장자
                 String extFileNameParam = photoUploadVO.getFileExt();
@@ -136,9 +138,10 @@ public class PhotoUploadService {
                         boolean uploadStatus = true;
                         if(extensionResult.getExtType().equals("gif") == false){
                             //GIF가 아닐 때 → 비율 처리 후 업로드 동시 진행
-                            uploadStatus = this.imageSizeAndUpload(uploadFolder.getAbsolutePath(), originalFileName, extensionResult.getExtType(), image, 0, 0, originalFileName_o);
-                            
+                            uploadStatus = this.imageSizeAndUpload(uploadFolder.getAbsolutePath(), originalFileName, extensionResult.getExtType(), image, 100, 100, originalFileName_o);
                         }
+
+
                     }
 
                 }
@@ -175,7 +178,7 @@ public class PhotoUploadService {
         }
 
         if(extFileName.equals("gif")){ //GIF 비율 따로 처리
-
+            this.resizeGif(imgTargetPath+File.separator+orgFilePath, imgTargetPath+File.separator+fileName, resizeW, resizeH, false);
         }else{
             try{
                 BufferedImage originBuffer = ((BufferedImage) image);
@@ -183,7 +186,7 @@ public class PhotoUploadService {
                         .size(resizeW, resizeH)
                         .outputFormat(extFileName)
                         .asBufferedImage();
-                ImageIO.write(bufferedImage, extFileName, new File(imgTargetPath+fileName));
+                ImageIO.write(bufferedImage, extFileName, new File(imgTargetPath+File.separator+fileName));
             }catch(Exception e){
                 e.printStackTrace();
                 return false;
@@ -204,11 +207,42 @@ public class PhotoUploadService {
         Double scale = new Double(1); //기본적으로 1배율
         if(srcW > dstW || srcH > dstH){ //목표값 중 하나라도 작을 때
             if(srcW > srcH){ //원본 width가 원본 height보다 클 때
-                scale = dstW * 0.1 / srcW;
+                scale = dstW * 1.0 / srcW;
             }else{ //원본 height가 더 클때
-                scale = dstH * 0.1 / srcH;
+                scale = dstH * 1.0 / srcH;
             }
         }
         return scale;
+    }
+
+    /**********************************************************************************************
+     * @Method 설명 : GIF 리사이즈
+     * @작성일 : 2023-01-12
+     * @작성자 : 정승주
+     * @변경이력 :
+     * @Param :
+     *  orgFile : originalFileName_o
+     *  newFile : fileName (originalFileName)
+     **********************************************************************************************/
+    public void resizeGif(final String orgFile,final String newFile, final int width, final int height,final boolean isOrg){
+        GifDecoder dec = new GifDecoder();
+        dec.read(orgFile); //GIF 파일을 읽는다. (반환되는 값은 read status code)
+
+        AnimatedGifEncoder enc = new AnimatedGifEncoder();
+        enc.start(newFile); //생성할 GIF 이미지
+        enc.setRepeat(0); // 0의 의미는 무기한 재생
+
+        final int frameCount = isOrg ? dec.getFrameCount() : 1;
+        for(int i=0; i<frameCount; i++){
+            BufferedImage bi = dec.getFrame(i);
+            int delay = dec.getDelay(i);
+
+            BufferedImage destimg = new BufferedImage(width,height,BufferedImage.TYPE_4BYTE_ABGR); //RGBA 인듯?
+            Graphics2D g = destimg.createGraphics();
+            g.drawImage(bi, 0, 0, width, height, null);
+            enc.addFrame(destimg);
+            enc.setDelay(delay);
+        }
+        enc.finish(); //Flushes
     }
 }
