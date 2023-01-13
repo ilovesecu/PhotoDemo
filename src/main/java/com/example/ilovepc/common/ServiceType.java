@@ -1,5 +1,6 @@
 package com.example.ilovepc.common;
 
 public enum ServiceType {
-    YEOBOYA
+    YEOBOYA,
+    NOBLESSE
 }

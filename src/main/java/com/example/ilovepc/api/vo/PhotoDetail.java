@@ -10,6 +10,6 @@ import lombok.Data;
  **********************************************************************************************/ 
 @Data
 public class PhotoDetail extends UploadResult{
-    private String imageFile; //이미지 파일 업로드 명
+    private String imageFile; //업로드된 이미지 파일 요약? (파일명|WIDTH|HEIGHT)
     private String encImageName; //인코딩 명
 }

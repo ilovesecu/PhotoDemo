@@ -26,9 +26,10 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -81,7 +82,6 @@ public class PhotoUploadService {
             photoResult.setUploadTotCnt(files.length);
             String absolutPath = fileUtil.getAbsolutePath(serverType);
             String datePath = fileUtil.getUploadFolderWithDate(type, photoUploadVO.getTemp(), dateMap);
-            log.error("ab={}, up={}",absolutPath,datePath);
 
             File uploadFolder = new File(absolutPath+File.separator+datePath);
             if(uploadFolder.exists() == false){ // 업로드할 폴더 생성
@@ -141,9 +141,36 @@ public class PhotoUploadService {
                             uploadStatus = this.imageSizeAndUpload(uploadFolder.getAbsolutePath(), originalFileName, extensionResult.getExtType(), image, 100, 100, originalFileName_o);
                         }
 
+                        List<String> newFileNameList = new ArrayList<>(); //뭐하는건지 알아보자.
+                        boolean isChatType = Const.CHAT_TYPE.contains(type);
+                        Set<String> keySet = saveSizeMap.keySet();
+                        for(String key : keySet){
+                            String newFileName = fileUtil.getNewFileName(memNo, dateMap, extensionResult.getExtType(), resultDecimal, key);
+                            int newImgSize = isChatType ? saveSizeMap.get(key) / 2 : saveSizeMap.get(key); //채팅방용 이미지 파일
+                            uploadStatus = uploadStatus && this.imageSizeAndUpload(uploadFolder.getAbsolutePath(), newFileName, extensionResult.getExtType(), image, newImgSize,newImgSize, originalFileName_o);
+
+                            if(uploadStatus) {
+                                newFileNameList.add(newFileName);
+                            }else{
+                                break;
+                            }
+                        }
+
+                        if(uploadStatus && extensionResult.getExtType().equals("gif")){
+                            // move = 두 경로가 동일하다면 source 파일의 이름을 dest로 변경
+                            // GIF의 _o -> 없애버리기 위함인듯.
+                            Files.move(Paths.get(uploadFolder+File.separator+originalFileName_o), Paths.get(uploadFolder+File.separator+originalFileName));
+                            newFileNameList.add(originalFileName_o);
+                        }
+
+                        if(uploadStatus){
+                            String fileNameConvention = originalFileName+"|"+image.getWidth(null)+"|"+image.getHeight(null);
+                            infoResult.setImageFile(fileNameConvention);
+                        }else{
+                            log.error("error- / extFileName={} / originalFilename={}",extensionResult.getExtType(), originalFileName);
+                        }
 
                     }
-
                 }
             }
             

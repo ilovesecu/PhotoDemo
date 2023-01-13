@@ -15,10 +15,16 @@ public class FileType {
         FILE_TYPE.put("temp"      , "yeo_tmp" );     // 임시저장용
 
         //////////////////////////////////////
-        // 여보야 타입들
+        // 킹보 타입들
         //////////////////////////////////////
         FILE_TYPE.put("photo"      , "yeo_photo"       + File.separator);  // 여보야
         FILE_TYPE.put("blur"       , "yeo_photo_blur"  + File.separator);  // 여보야
+        FILE_TYPE.put("msg"       , "yeo_mesg"  + File.separator);  // 여보야 메시지
+
+        //////////////////////////////////////
+        // 블레스 타입들
+        //////////////////////////////////////
+        FILE_TYPE.put("nbMsg"        , "yeo_nb_mesg"        + File.separator);  // 노블 메세지
     }
 
     /**
@@ -40,6 +46,8 @@ public class FileType {
         switch(key){
             case "preview":
                 return ServiceType.YEOBOYA;
+            case "nbMsg":
+                return ServiceType.NOBLESSE;
             default:
                 return ServiceType.YEOBOYA;
         }
